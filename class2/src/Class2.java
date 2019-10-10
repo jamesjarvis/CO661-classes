@@ -20,12 +20,12 @@ class Renter implements Runnable {
         Car car = this.lender.rentCar(this.interestedIn);
 
         System.out.println(name + " got car  " + interestedIn);
-        // Distnace
-        int distance = ThreadLocalRandom.current().nextInt(1,100);
+        // Distance
+        int distance = ThreadLocalRandom.current().nextInt(1, 100);
         car.drive(distance);
 
         System.out.println(name + " returning car " + interestedIn);
-        this.lender.returnCar(car);
+        this.lender.returnCar(car, this.interestedIn);
     }
 }
 
@@ -68,10 +68,31 @@ class Lender {
         }
     }
 
-    // TODO implement rentCar which takes an `int` and returns a `Car`
+    // rentCar takes an `int` and returns a `Car`
+    public Car rentCar(int id) {
+        this.locks.get(id).lock();
+        return cars.get(id);
+    }
 
-    // TODO implement returnCar which takes a `Car` and adds up the total
+    // returnCar takes a `Car` and adds up the total
     // mileage of cars in the fleet
+    public synchronized int returnCar(Car c, int id) {
+        try {
+            cars.set(id, c);
+            totalMileage = this.getTotalMileage();
+            return totalMileage;
+        } finally {
+            this.locks.get(id).unlock();
+        }
+    }
+
+    public int getTotalMileage() {
+        int tempMileage = 0;
+        for (int i = 0; i < cars.size(); i++) {
+            tempMileage += cars.get(i).mileage();
+        }
+        return tempMileage;
+    }
 
 }
 
@@ -89,6 +110,8 @@ public class Class2 {
             int interestedInCar = ThreadLocalRandom.current().nextInt(0, numCars);
 
             // TODO - Create a renter and start it in a new thread
+            Thread t = new Thread(new Renter(lender, "lender " + i, interestedInCar));
+            t.start();
         }
 
 
